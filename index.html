@@ -521,6 +521,18 @@ footer { color: #93A6CF; border-top-color: #2B4780; }
   .axis .t { font-size: 20px; }
   .axis .l { font-size: 14px; }
 }
+.more { justify-content: flex-start; font-size: 19px; }
+.more .plus { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #DCE8FF; color: #0F2250; font-size: 24px; font-weight: 900; line-height: 1; box-shadow: 0 3px 0 #7E9CD6; flex: none; }
+.nojs { background: #10275A; border: 1px solid #3A5C99; border-radius: 14px; padding: 12px 14px; margin: 0; color: var(--ink); }
+.nojs a { color: #DCE8FF; font-weight: 700; }
+.pod .pn { flex: 1 1 auto; }
+.pod .pp { flex: none; margin-inline-start: 0; }
+.pod .crown { position: static; display: block; width: fit-content; margin-bottom: 4px; font-family: "Assistant", sans-serif; }
+.pod .pn.long { font-size: clamp(15px, 4.1vw, 24px); }
+@media (max-width: 440px) { .pod .face + .face { margin-inline-start: -34px; } .pod.r1 .face { width: 66px; height: 72px; } }
+@media (max-width: 440px) { .pod .pp { font-size: 28px; } .pod.rest .pp { font-size: 18px; } .pod { gap: 8px; } }
+@media (max-width: 440px) { .pod .face, .pod.r1 .face { width: 58px; height: 64px; } .pod .face + .face { margin-inline-start: -30px; } .pod { padding-inline: 8px 12px; } }
+@media (max-width: 380px) { .pod .pn.long { font-size: 14px; } .pod .pp { font-size: 24px; } }
 
 /* when JS runs it shows just the best match */
 .js-ranked .bwrap { display: none !important; }
@@ -576,6 +588,7 @@ input[name=p12]:checked ~ .qs .q12 .after{display:flex}input[name=p12]:checked ~
         <p class="none-msg">לא הסכמתם עם אף מצע, אז אין על מה לבסס התאמה. שחקו שוב ונקטו עמדה.</p>
         <p>ההתאמה מבוססת על 12 הסטים של נקודות במשחק בלבד, ולא על כל המצע. כדאי לקרוא את המצע המלא לפני ההצבעה.</p>
       </div>
+      <noscript><p class="nojs">התצוגה הזו לא מריצה סקריפטים, ולכן אין כאן דירוג, אחוזים וצירים. לתוצאות המלאות פתחו את המשחק בדפדפן: <a href="https://michaelaharon.github.io/Election-Quiz-2026/">https://michaelaharon.github.io/Election-Quiz-2026/</a></p></noscript>
       <div id="bars" hidden></div>
       <div class="split">
         <div class="stat"><b class="cnt-score"></b><span>זיהיתם נכון את המפלגה.</span></div>
@@ -724,15 +737,16 @@ var engine = function engine(SET, P, esc) {
     });
     return n ? Math.max(-1, Math.min(1, s / n)) : null;
   }
+  var SHORT = { miluim: "המילואימניקים", rz: "הציונות הדתית", joint: "הרשימה המשותפת" };
+  function short(p) { return SHORT[p] || P[p].n.replace(/ [(].*[)]$/, ""); }
   function renderBoard(m, winner) {
     if (winner) m = [m.filter(function (x) { return x.p === winner; })[0]].concat(m.filter(function (x) { return x.p !== winner; }));
     var pod = function (x, k, cls) {
-      return '<div class="pod ' + cls + '">' + faces(x.p) + '<span class="pn">' + esc(P[x.p].n.replace(/ [(].*[)]$/, "")) + '</span><span class="pp">' + x.pct + '%</span>' +
-        (k === 0 && winner ? '<span class="crown">הזוכה</span>' : "") + '</div>';
+      return '<div class="pod ' + cls + '">' + faces(x.p) + '<span class="pn' + (short(x.p).length > 12 ? " long" : "") + '">' + (k === 0 && winner ? '<span class="crown">הזוכה</span>' : "") + esc(short(x.p)) + '</span><span class="pp">' + x.pct + '%</span></div>';
     };
     var html = '<div class="board-title"><small>' + esc(NAME) + '</small><b>תוצאות</b></div>' +
       '<div class="podium">' + m.slice(0, 3).map(function (x, k) { return pod(x, k, "r" + (k + 1)); }).join("") + '</div>' +
-      '<button type="button" class="more" id="more" aria-expanded="false">+ הצג עוד</button>' +
+      '<button type="button" class="more" id="more" aria-expanded="false"><span class="plus">+</span><span class="mt">הצג עוד ' + m.slice(3).length + ' מפלגות</span></button>' +
       '<div class="rest-list" id="restList" hidden>' + m.slice(3).map(function (x, k) { return pod(x, k + 3, "rest"); }).join("") + '</div>' +
       '<div class="axes">' + AXES.map(function (ax) {
         var x = axisPos(ax), left = x === null ? 50 : 50 + 50 * x * ax.sign;
@@ -744,7 +758,7 @@ var engine = function engine(SET, P, esc) {
     var bars = document.getElementById("bars");
     bars.innerHTML = html; bars.hidden = false;
     var more = document.getElementById("more"), rest = document.getElementById("restList");
-    more.addEventListener("click", function () { rest.hidden = !rest.hidden; more.setAttribute("aria-expanded", String(!rest.hidden)); more.textContent = rest.hidden ? "+ הצג עוד" : "− הצג פחות"; });
+    more.addEventListener("click", function () { rest.hidden = !rest.hidden; more.setAttribute("aria-expanded", String(!rest.hidden)); more.querySelector(".plus").textContent = rest.hidden ? "+" : "−"; more.querySelector(".mt").textContent = rest.hidden ? "הצג עוד " + rest.children.length + " מפלגות" : "הצג פחות"; });
     requestAnimationFrame(function () { requestAnimationFrame(function () {
       Array.prototype.forEach.call(bars.querySelectorAll(".dot"), function (d) { d.style.left = d.dataset.left + "%"; });
     }); });
